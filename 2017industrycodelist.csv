@@ -1,0 +1,15 @@
+Major Category,2017 Census Code,2017 NAICS Code
+"Agriculture, Forestry, Fishing, and Hunting, and Mining",0170-0490,11-21
+Construction,0770,23
+Manufacturing,1070-3990,31-33
+Wholesale Trade,4070-4590,42
+Retail Trade,4670-5790,44-45
+"Transportation and Warehousing, and Utilities     ",6070-6390,48-49
+"Transportation and Warehousing, and Utilities     ", 0570-0690,22
+Information ,6470-6780,51
+"Finance and Insurance, and Real Estate and Rental and Leasing",6870-7190,52-53
+"Professional, Scientific, and Management, and Administrative and Waste Management Services",7270-7790,54-56
+"Educational Services, and Health Care and Social Assistance",7860-8470,61-62
+"Arts, Entertainment, and Recreation, and Accommodation and Food Services",8561-8690,71-72
+"Other Services, Except Public Administration",8770-9290,81
+Public Administration,9370-9590,92

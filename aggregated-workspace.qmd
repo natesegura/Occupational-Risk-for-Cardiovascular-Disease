@@ -1,0 +1,425 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+## Quarto
+
+### Load / Setup
+
+```{r}
+#load libraries
+library(tidycensus)
+library(tidyverse)
+
+#set API key
+apiKey="03fee447fb8eb2316ca7a1579efac85a6e5050de"
+census_api_key(apiKey, install = TRUE, overwrite=TRUE)
+readRenviron("~/.Renviron")
+```
+
+## Querying
+
+```{r}
+# Make 2023 dataframe to view all variables
+vars_2023 <- load_variables(2023, "acs5", cache = TRUE)
+```
+
+### Find Variables
+
+B24114 --\> "Detailed Occupation for the Civilian Employed Population 16 Y..." C24010 --\> "Sex by Occupation for the Civilian Employed Population 16..." C24030 --\> "Sex by industry" B24030 --\> Not in data, is uncollapsed version of C24030
+
+```{r}
+# Create dataframes for neccessary table(s)
+
+C24030_vars <- vars_2023 %>%
+  filter(grepl("^C24030_", name))
+
+```
+
+There are 26 variables but 13 are subcategories, so we only need the major 13. We will total to 26 variables due to the seperation by sex.
+
+Male: C24030_003 - Agriculture, forestry, fishing and hunting, and mining C24030_006 - Construction C24030_007 - Manufacturing C24030_008 - Wholesale trade C24030_009 - Retail trade C24030_010 - Transportation and warehousing, and utilities C24030_013 - Information C24030_014 - Finance and insurance, and real estate and rental and leasing C24030_017 - Professional, scientific, and management, and administrative and waste management services C24030_021 - Educational services, and health care and social assistance C24030_024 - Arts, entertainment, and recreation, and accommodation and food services C24030_027 - Other services, except public administration C24030_028 - Public Administration
+
+Female: C24030_030 - Agriculture, forestry, fishing and hunting, and mining C24030_033 - Construction C24030_034 - Manufacturing C24030_035 - Wholesale trade C24030_036 - Retail trade C24030_037 - Transportation and warehousing, and utilities C24030_040 - Information C24030_041 - Finance and insurance, and real estate and rental and leasing C24030_044 - Professional, scientific, and management, and administrative and waste management services C24030_048 - Educational services, and health care and social assistance C24030_051 - Arts, entertainment, and recreation, and accommodation and food services C24030_054 - Other services, except public administration C24030_055 - Public Administration
+
+### Query 2023 Data
+
+```{r}
+
+industry2023 <- get_acs(
+  geography = "county", # could be tract, zip
+  variables = c(
+    "M_Agriculture, forestry, fishing and hunting, and mining" = "C24030_003",
+    "M_Construction" = "C24030_006",
+    "M_Manufacturing" = "C24030_007",
+    "M_Wholesale trade" = "C24030_008",
+    "M_Retail trade" = "C24030_009",
+    "M_Transportation and warehousing, and utilities" = "C24030_010",
+    "M_Information" = "C24030_013",
+    "M_Finance and insurance, and real estate and rental and leasing" = "C24030_014",
+    "M_Professional, scientific, and management, and administrative and waste management services" = "C24030_017",
+    "M_Educational services, and health care and social assistance" = "C24030_021",
+    "M_Arts, entertainment, and recreation, and accommodation and food services" = "C24030_024",
+    "M_Other services, except public administration" = "C24030_027",
+    "M_Public Administration" = "C24030_028",
+    "F_Agriculture, forestry, fishing and hunting, and mining" = "C24030_030",
+    "F_Construction" = "C24030_033",
+    "F_Manufacturing" = "C24030_034",
+    "F_Wholesale trade" = "C24030_035",
+    "F_Retail trade" = "C24030_036",
+    "F_Transportation and warehousing, and utilities" = "C24030_037",
+    "F_Information" = "C24030_040",
+    "F_Finance and insurance, and real estate and rental and leasing" = "C24030_041",
+    "F_Professional, scientific, and management, and administrative and waste management services" = "C24030_044",
+    "F_Educational services, and health care and social assistance" = "C24030_048",
+    "F_Arts, entertainment, and recreation, and accommodation and food services" = "C24030_051",
+    "F_Other services, except public administration" = "C24030_054",
+    "F_Public Administration" = "C24030_055"
+  ),
+  state = "OR",
+  county = "Multnomah",
+  year = 2023,
+  survey = "acs5"
+)
+
+```
+
+### 10 Year Query
+
+```{r}
+# Define Years
+years <- 2013:2023
+
+# Create Empty List to Store Results
+pop_data_list <- list()
+
+# Loop for Population Data
+for (year in years) {
+  pop_data_list[[as.character(year)]] <- get_acs(
+    geography = "county",
+    variables = c(
+      "M_Agriculture, forestry, fishing and hunting, and mining" = "C24030_003",
+      "M_Construction" = "C24030_006",
+      "M_Manufacturing" = "C24030_007",
+      "M_Wholesale trade" = "C24030_008",
+      "M_Retail trade" = "C24030_009",
+      "M_Transportation and warehousing, and utilities" = "C24030_010",
+      "M_Information" = "C24030_013",
+      "M_Finance and insurance, and real estate and rental and leasing" = "C24030_014",
+      "M_Professional, scientific, and management, and administrative and waste management services" = "C24030_017",
+      "M_Educational services, and health care and social assistance" = "C24030_021",
+      "M_Arts, entertainment, and recreation, and accommodation and food services" = "C24030_024",
+      "M_Other services, except public administration" = "C24030_027",
+      "M_Public Administration" = "C24030_028",
+      "F_Agriculture, forestry, fishing and hunting, and mining" = "C24030_030",
+      "F_Construction" = "C24030_033",
+      "F_Manufacturing" = "C24030_034",
+      "F_Wholesale trade" = "C24030_035",
+      "F_Retail trade" = "C24030_036",
+      "F_Transportation and warehousing, and utilities" = "C24030_037",
+      "F_Information" = "C24030_040",
+      "F_Finance and insurance, and real estate and rental and leasing" = "C24030_041",
+      "F_Professional, scientific, and management, and administrative and waste management services" = "C24030_044",
+      "F_Educational services, and health care and social assistance" = "C24030_048",
+      "F_Arts, entertainment, and recreation, and accommodation and food services" = "C24030_051",
+      "F_Other services, except public administration" = "C24030_054",
+      "F_Public Administration" = "C24030_055"
+      ),
+    state = "OR",
+    county = "Multnomah",
+    year = year,
+    survey = "acs5",
+    geometry = FALSE #we'll look at TRUE next week
+  ) |>
+    mutate(year = year) # add year column for easier joining later
+}
+
+# Combine All Years
+industry10YR <- bind_rows(pop_data_list)
+
+```
+
+## Wrangling
+
+### 10YR Query
+
+```{r}
+# Fix Sex Division
+
+fixed_10YR <- industry10YR |> 
+  mutate(industrycategory = str_extract(variable, "(?<=\\_).*")) |> 
+  mutate(industrycategory = str_to_lower(industrycategory)) |> 
+  group_by(GEOID, NAME, year, industrycategory) |> 
+  summarize(population = sum(estimate, na.rm = TRUE),
+            moe = sqrt(sum(moe^2)),  
+            .groups = "drop")
+  
+```
+
+### Crosswalk File
+
+```{r}
+# Download Condensed Crosswalk File (done in google sheets)
+industrycodes <- read_csv("2017industrycodelist.csv")
+
+# Rename Crosswalk 
+industrycodes <- industrycodes |>
+  rename(industrycategory = "Major Category") |> 
+  rename(naicscode = "2017 NAICS Code") |> 
+  rename(censuscode = "2017 Census Code")
+
+# Fix Crosswalk (turn into applyable ranges)
+industrycodes <- industrycodes |> 
+  separate(naicscode, into = c("naicscodestart", "naicscodeend"), sep = "-", convert = TRUE) |> 
+  mutate(naicscodeend = if_else(is.na(naicscodeend), naicscodestart, naicscodeend)) |> 
+  separate(censuscode, into = c("censusstart", "censusend"), sep = "-", convert = FALSE ) |> 
+  mutate(censusend = if_else(is.na(censusend), censusstart, censusend),
+         censusend = as.integer(censusend),
+         censusstart = as.integer(censusstart))
+
+industrycodes[1, "industrycategory"] <- "Agriculture, Forestry, Fishing and Hunting, and Mining"
+```
+
+### Aggregated Data
+
+```{r}
+# Download Aggregated Data from mayoblt
+naics_agg <- read_csv("naics_aggregated.csv")
+census_agg <- read_csv("census_aggregated.csv")
+
+# Use crosswalk to prepare aggregated data
+
+# NAICS Crosswalk
+naics_agg2 <- left_join(naics_agg, industrycodes, join_by(naicscode >= naicscodestart,
+                                                          naicscode <= naicscodeend))
+
+naics_aggregated <- naics_agg2 |>
+  mutate(industrycategory = str_to_lower(industrycategory)) |> 
+  group_by(ddodyear, industrycategory) |> 
+  summarize(deathcount = sum(deathcount),
+            .groups = "drop")
+
+# CENSUS Crosswalk
+census_agg <- census_agg |> 
+  mutate(censuscode = as.integer(censuscode))
+
+census_agg2 <- left_join(census_agg, industrycodes, join_by(censuscode >= censusstart,
+                                                            censuscode <= censusend))
+
+census_aggregated <- census_agg2 |> 
+  mutate(industrycategory = str_to_lower(industrycategory)) |> 
+  group_by(ddodyear, industrycategory) |> 
+  summarize(deathcount = sum(deathcount),
+            .groups = "drop")
+
+
+# Check if Codes are Same
+# all.equal(census_aggregated, naics_aggregated)
+
+```
+
+## Combine
+
+### Query + NAICS-Ind
+
+```{r}
+joined_NAICS <- 
+  left_join(fixed_10YR, naics_aggregated, by = c("industrycategory", "year" = "ddodyear"))
+
+# Create Rate Column
+joined_NAICS <- joined_NAICS |> 
+  mutate(rate_per_100k = (deathcount / population) * 100000)
+```
+
+### Query + CensusCodes-Ind
+
+```{r}
+joined_CENSUS <- 
+  left_join(fixed_10YR, census_aggregated, by = c("industrycategory", "year" = "ddodyear"))
+
+# Create Rate Column
+joined_CENSUS <- joined_CENSUS |> 
+  mutate(rate_per_100k = (deathcount / population) * 100000)
+```
+
+### Rename Categories for Visualizations
+
+```{r}
+industryrenaming <- read_csv("2017crosswalk_renaming.csv")
+industryrenaming[1, "industrycategory_old"] <- "Agriculture, Forestry, Fishing and Hunting, and Mining"
+industryrenaming <- industryrenaming |> mutate(industrycategory_old = str_to_lower(industrycategory_old))
+
+joined_NAICS <- left_join(joined_NAICS, industryrenaming, by = c("industrycategory" = "industrycategory_old"))
+joined_NAICS <- joined_NAICS |> 
+  select(-industrycategory) |> 
+  rename(industrycategory = industrycategory_new) |> 
+  relocate(industrycategory, .after = year)
+
+# Create Averages Dataframe
+
+average_naics <- joined_NAICS |> 
+  group_by(industrycategory) |> 
+  summarize(deathrate = mean(rate_per_100k), sd = sd(rate_per_100k))
+
+```
+
+## Visualizations
+
+### Testing
+
+#### Industry Codes
+
+```{r}
+joined_NAICS |> 
+  ggplot(aes(year, rate_per_100k, color = industrycategory)) +
+  geom_line() 
+
+joined_CENSUS |> 
+  mutate(industrycategory = word(industrycategory)) |> 
+  ggplot(aes(year, rate_per_100k, color = industrycategory)) +
+  geom_line() 
+```
+
+```{r}
+joined_NAICS |> 
+  mutate(industrycategory = word(industrycategory)) |> 
+  ggplot(aes(industrycategory, rate_per_100k, fill = industrycategory)) +
+  geom_boxplot() +
+  labs(title = "boxplot by industry")
+
+joined_NAICS |> 
+  mutate(industrycategory = word(industrycategory)) |> 
+  ggplot(aes(fct_reorder(industrycategory, rate_per_100k), rate_per_100k, fill = industrycategory)) +
+  geom_boxplot() +
+  coord_flip() +
+  labs(title = "boxplot by industry")
+
+joined_NAICS |> 
+  mutate(industrycategory = word(industrycategory)) |> 
+  ggplot(aes(industrycategory, rate_per_100k, fill = industrycategory)) +
+  geom_col() +
+  facet_wrap(vars(year)) +
+  labs(title = "geom col faceted by year")
+```
+
+```{r}
+joined_NAICS |> 
+  mutate(industrycategory = word(industrycategory)) |>
+  #filter(industrycategory %in% t3b3) |> 
+  ggplot(aes(industrycategory, rate_per_100k, fill = industrycategory)) +
+  geom_violin()
+```
+
+#### Averaged Data
+
+```{r}
+avg_NAICS <- joined_NAICS |> 
+  mutate(industrycategory = word(industrycategory)) |> 
+  group_by(industrycategory) |> 
+  summarize(deathrate = mean(rate_per_100k), sd = sd(rate_per_100k))
+
+avg_NAICS |> 
+  ggplot(aes(fct_reorder(industrycategory,deathrate), deathrate, fill = industrycategory)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Average Rate per Category from all Years (2013-2023)")
+
+avg_NAICS |> 
+  ggplot(aes(fct_reorder(industrycategory,deathrate), deathrate, fill = industrycategory)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = deathrate-sd, 
+                    ymax = deathrate+sd),
+                width=0.5) +
+  #coord_flip() +
+  labs(title = "Previous Plot w/ Error Bars")
+
+avg_NAICS |> 
+  ggplot(aes(fct_reorder(industrycategory,deathrate), deathrate, fill = industrycategory)) +
+  geom_point() +
+  geom_hline(aes(yintercept = mean(deathrate), color = "red"))
+  #coord_flip()
+
+```
+
+### Real / Finished
+
+```{r}
+p1 <- joined_NAICS |> 
+  ggplot(aes(year, rate_per_100k, color = industrycategory)) +
+  geom_line() +
+  scale_x_continuous(breaks = c(2014,2016,2018,2020,2022)) +
+  labs(title = "CV Death Rate by Industry Category",
+       subtitle = "Multnomah County, 2013-2023",
+       y = "CV Death Rate (per 100k)",
+       x = "Year",
+       color = "Industry")
+
+p2 <- joined_NAICS |> 
+  ggplot(aes(fct_reorder(industrycategory, rate_per_100k), rate_per_100k)) +
+  geom_boxplot() +
+  coord_flip() +
+  labs(title = "Box Plot of CV Death Rates by Occupation",
+       subtitle = "Mulnomah County, 2013-2023",
+       y = "CV Death Rate (per 100k)",
+       x = "Industry Category")
+
+p3 <- average_naics |> 
+  ggplot(aes(fct_reorder(industrycategory,deathrate), deathrate, fill = deathrate)) +
+  geom_col() +
+  scale_fill_gradient(low = "#00C08D", high = "#00ABFD") +
+  geom_errorbar(aes(ymin = deathrate-sd, 
+                    ymax = deathrate+sd),
+                width=0.5) +
+  labs(title = "CV Death Rate by Occupation",
+       subtitle = "Multnomah County, Average Counts from 2013-2023",
+       y = "Average Death Rate from 2013-2023 (per 100k)",
+       x = "") +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Save All Plots
+
+ggsave("FinalVis/linechart.png", plot = p1, width = 10, height = 6)
+ggsave("FinalVis/boxplot.png", plot = p2)
+ggsave("FinalVis/colchart.png", plot = p3)
+```
+
+## Statistics
+
+```{r}
+# Take top 3 and bottom 3
+
+t3b3 <- c("wholesale", "professional,", "arts,", "construction", "transportation", "agriculture,")
+
+dr_maxmin <- joined_NAICS |> 
+  mutate(industrycategory = word(industrycategory)) |> 
+  filter(industrycategory %in% t3b3)
+
+# ANOVA
+
+model <- aov(rate_per_100k ~ industrycategory,
+             data = dr_maxmin,
+             weights = population)
+summary(model)
+
+
+# TukeyHSD
+
+tukey_model <- TukeyHSD(model)
+
+tukey_frame <- as.data.frame(tukey_model$industrycategory) 
+
+tukey_frame <- tukey_frame |> 
+  select(-lwr, -upr) |> 
+  mutate(Comparison = rownames(tukey_frame), .before = diff) |> 
+  rename(Difference = diff,
+         "P-Value" = "p adj")
+
+rownames(tukey_frame) <- (1:15)
+
+tukey_frame
+```
